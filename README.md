@@ -6,6 +6,10 @@ This plugin uses a modified version of the Mono Compiler Service (mcs) that allo
 The compiler relies on `System.Reflection.Emit` being present! As such, Unity games using .NET Standard API (i.e. has `netstandard.dll` in the `Managed` folder) 
 will not be able to run this plugin!
 
+## Why
+
+Because sometimes I'm lazy to open Visual Studio and write proper plugins.
+
 ## Installation
 
 Download the latest plugin version from releases and place it into `BepInEx/plugin` folder.
@@ -29,6 +33,10 @@ public static class MyScript {
     }
 }
 ```
+
+### Compilation errors
+
+At this moment the compilation errors are simply written to the BepInEx console.
 
 ## TODO
 
