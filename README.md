@@ -32,7 +32,7 @@ public static class MyScript {
 
 ## TODO
 
-* [] Script reloading
-* [] Specifying script metadata (name, description, DLL dependencies)
-* [] Maybe a UI?
-* [] Optionally an ability to locate and use `csc` to compile scripts when mcs cannot be used
+* [ ] Script reloading
+* [ ] Specifying script metadata (name, description, DLL dependencies)
+* [ ] Maybe a UI?
+* [ ] Optionally an ability to locate and use `csc` to compile scripts when mcs cannot be used
