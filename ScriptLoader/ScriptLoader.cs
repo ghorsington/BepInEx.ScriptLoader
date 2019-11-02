@@ -32,22 +32,22 @@ namespace ScriptLoader
             fileSystemWatcher.Filter = "*.cs";
             fileSystemWatcher.Changed += (sender, args) =>
             {
-                Logger.LogInfo($"File {args.Name} changed. Recompiling.");
+                Logger.LogInfo($"File {Path.GetFileName(args.Name)} changed. Recompiling...");
                 shouldRecompile = true;
             };
             fileSystemWatcher.Deleted += (sender, args) =>
             {
-                Logger.LogInfo($"File {args.Name} removed. Recompiling.");
+                Logger.LogInfo($"File {Path.GetFileName(args.Name)} removed. Recompiling...");
                 shouldRecompile = true;
             };
             fileSystemWatcher.Created += (sender, args) =>
             {
-                Logger.LogInfo($"File {args.Name} created. Recompiling.");
+                Logger.LogInfo($"File {Path.GetFileName(args.Name)} created. Recompiling...");
                 shouldRecompile = true;
             };
             fileSystemWatcher.Renamed += (sender, args) =>
             {
-                Logger.LogInfo($"File {args.Name} renamed. Recompiling.");
+                Logger.LogInfo($"File {Path.GetFileName(args.Name)} renamed. Recompiling...");
                 shouldRecompile = true;
             };
             fileSystemWatcher.EnableRaisingEvents = true;
@@ -125,12 +125,12 @@ namespace ScriptLoader
                 foreach (var type in lastCompilationAssembly.GetTypes())
                 {
                     var method = type.GetMethods(BindingFlags.Static | BindingFlags.Public)
-                        .FirstOrDefault(m => m.Name == "Finalize" && m.GetParameters().Length == 0);
+                        .FirstOrDefault(m => m.Name == "Unload" && m.GetParameters().Length == 0);
 
                     if (method == null)
                         continue;
 
-                    Logger.Log(LogLevel.Info, $"Finalizing {type.Name}");
+                    Logger.Log(LogLevel.Info, $"Unloading {type.Name}");
                     method.Invoke(null, new object[0]);
                 }
 
