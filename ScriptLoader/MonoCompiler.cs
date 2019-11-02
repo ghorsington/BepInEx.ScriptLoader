@@ -8,58 +8,22 @@ using Mono.CSharp;
 
 namespace ScriptLoader
 {
-    public interface ICSharpSource
-    {
-        byte[] Bytes { get; }
-        string Location { get; }
-        string Name { get; }
-    }
-
-    public class CSharpFile : ICSharpSource
-    {
-        public CSharpFile(string path)
-        {
-            if (!File.Exists(path))
-                throw new FileNotFoundException("The given source file does not exist!", path);
-            if (Path.GetExtension(path)?.ToLowerInvariant() != ".cs")
-                throw new ArgumentException("The given path is not a .cs file!", nameof(path));
-            Location = path;
-        }
-
-        public byte[] Bytes => File.ReadAllBytes(Location);
-        public string Location { get; }
-
-        public string Name => Path.GetFileName(Location);
-    }
-
-    public class CSharpCode : ICSharpSource
-    {
-        public CSharpCode()
-        {
-            SourceCode = new StringBuilder();
-        }
-
-        public StringBuilder SourceCode { get; }
-
-        public byte[] Bytes => Encoding.UTF8.GetBytes(SourceCode.ToString());
-        public string Location => "<eval>";
-        public string Name => "<eval>";
-    }
-
     public static class MonoCompiler
     {
         private static readonly HashSet<string> StdLib =
             new HashSet<string>(StringComparer.InvariantCultureIgnoreCase)
                 {"mscorlib", "System.Core", "System", "System.Xml"};
 
+        private static readonly HashSet<string> compiledAssemblies = new HashSet<string>();
+
         // Mimicked from https://github.com/kkdevs/Patchwork/blob/master/Patchwork/MonoScript.cs#L124
-        public static Assembly Compile<T>(IList<T> sources, IEnumerable<Assembly> imports = null,
-            TextWriter logger = null) where T : ICSharpSource
+        public static Assembly Compile(Dictionary<string, byte[]> sources, TextWriter logger = null)
         {
             ReportPrinter reporter = logger == null ? new ConsoleReportPrinter() : new StreamReportPrinter(logger);
             Location.Reset();
 
             var dllName = $"compiled_{DateTime.Now.Ticks}";
+            compiledAssemblies.Add(dllName);
 
             var ctx = CreateContext(reporter);
             ctx.Settings.SourceFiles.Clear();
@@ -68,12 +32,12 @@ namespace ScriptLoader
 
             SeekableStreamReader GetFile(SourceFile file)
             {
-                return new SeekableStreamReader(new MemoryStream(sources[file.Index].Bytes), Encoding.UTF8);
+                return new SeekableStreamReader(new MemoryStream(sources[file.OriginalFullPathName]), Encoding.UTF8);
             }
 
             foreach (var source in sources)
             {
-                ctx.Settings.SourceFiles.Add(new SourceFile(source.Name, source.Location, i, GetFile));
+                ctx.Settings.SourceFiles.Add(new SourceFile(Path.GetFileName(source.Key), source.Key, i, GetFile));
                 i++;
             }
 
@@ -103,10 +67,6 @@ namespace ScriptLoader
 
             var loader = new DynamicLoader(importer, ctx);
             ImportAppdomainAssemblies(a => importer.ImportAssembly(a, container.GlobalRootNamespace));
-
-            if (imports != null)
-                foreach (var assembly in imports)
-                    importer.ImportAssembly(assembly, container.GlobalRootNamespace);
 
             loader.LoadReferences(container);
             ass.Create(AppDomain.CurrentDomain, AssemblyBuilderAccess.RunAndSave);
@@ -142,7 +102,7 @@ namespace ScriptLoader
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 var name = assembly.GetName().Name;
-                if (StdLib.Contains(name))
+                if (StdLib.Contains(name) || compiledAssemblies.Contains(name))
                     continue;
                 import(assembly);
             }
