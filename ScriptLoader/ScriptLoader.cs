@@ -15,17 +15,56 @@ namespace ScriptLoader
     {
         private readonly string scriptsPath = Path.Combine(Paths.GameRootPath, "scripts");
         private Dictionary<string, ScriptInfo> availableScripts = new Dictionary<string, ScriptInfo>();
+        private FileSystemWatcher fileSystemWatcher;
         private Assembly lastCompilationAssembly;
         private string lastCompilationHash;
         private LoggerTextWriter loggerTextWriter;
+        private bool shouldRecompile;
 
-        public void Awake()
+        private void Awake()
         {
             DontDestroyOnLoad(this);
-
             loggerTextWriter = new LoggerTextWriter(Logger);
-
             CompileScripts();
+
+            fileSystemWatcher = new FileSystemWatcher(scriptsPath);
+            fileSystemWatcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
+            fileSystemWatcher.Filter = "*.cs";
+            fileSystemWatcher.Changed += (sender, args) =>
+            {
+                Logger.LogInfo($"File {args.Name} changed. Recompiling.");
+                shouldRecompile = true;
+            };
+            fileSystemWatcher.Deleted += (sender, args) =>
+            {
+                Logger.LogInfo($"File {args.Name} removed. Recompiling.");
+                shouldRecompile = true;
+            };
+            fileSystemWatcher.Created += (sender, args) =>
+            {
+                Logger.LogInfo($"File {args.Name} created. Recompiling.");
+                shouldRecompile = true;
+            };
+            fileSystemWatcher.Renamed += (sender, args) =>
+            {
+                Logger.LogInfo($"File {args.Name} renamed. Recompiling.");
+                shouldRecompile = true;
+            };
+            fileSystemWatcher.EnableRaisingEvents = true;
+        }
+
+        private void OnDestroy()
+        {
+            fileSystemWatcher.EnableRaisingEvents = false;
+            fileSystemWatcher.Dispose();
+        }
+
+        private void Update()
+        {
+            if (!shouldRecompile)
+                return;
+            CompileScripts();
+            shouldRecompile = false;
         }
 
         private void CompileScripts()
@@ -58,8 +97,9 @@ namespace ScriptLoader
                 scriptDict[scriptFile] = data;
             }
 
-            var hash = Convert.ToBase64String(md5.TransformFinalBlock(new byte[0], 0, 0));
-
+            md5.TransformFinalBlock(new byte[0], 0, 0);
+            var hash = Convert.ToBase64String(md5.Hash);
+            
             if (hash == lastCompilationHash)
             {
                 Logger.LogInfo("No changes detected! Skipping compilation!");
