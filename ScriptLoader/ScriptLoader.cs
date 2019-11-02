@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Reflection;
 using BepInEx;
@@ -22,7 +21,7 @@ namespace ScriptLoader
             }
 
             var files = Directory.GetFiles("scripts", "*.cs").Select(p => new CSharpFile(p)).ToList();
-            Assembly ass = MonoCompiler.Compile(files);
+            var ass = MonoCompiler.Compile(files);
             Logger.Log(LogLevel.Info, $"Compiling {files.Count} files");
 
             if (ass == null)
@@ -32,10 +31,10 @@ namespace ScriptLoader
                 return;
             }
 
-            foreach (Type type in ass.GetTypes())
+            foreach (var type in ass.GetTypes())
             {
-                MethodInfo method = type.GetMethods(BindingFlags.Static | BindingFlags.Public)
-                                        .FirstOrDefault(m => m.Name == "Main" && m.GetParameters().Length == 0);
+                var method = type.GetMethods(BindingFlags.Static | BindingFlags.Public)
+                    .FirstOrDefault(m => m.Name == "Main" && m.GetParameters().Length == 0);
 
                 if (method == null)
                     continue;

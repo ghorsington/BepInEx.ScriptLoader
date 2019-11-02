@@ -49,47 +49,29 @@ namespace ScriptLoader
     public static class MonoCompiler
     {
         private static readonly HashSet<string> StdLib =
-                new HashSet<string>(StringComparer.InvariantCultureIgnoreCase) {"mscorlib", "System.Core", "System", "System.Xml"};
-
-        //public MonoCompiler(TextWriter logger) : this(null, logger) { }
-        //public MonoCompiler() : this(null, null) { }
-
-        //public MonoCompiler(CompilerContext ctx, TextWriter logger) : base(ctx ?? CreateContext(reportPrinter))
-        //{
-        //    Reporter = logger != null ? CreatePrinter(logger) : new ConsoleReportPrinter();
-        //    Logger = logger;
-        //    ImportAppdomainAssemblies(ReferenceAssembly);
-        //    ActiveDomain.AssemblyLoad += OnAssemblyLoad;
-        //}
-
-        //private AppDomain ActiveDomain => AppDomain.CurrentDomain;
-        //private TextWriter Logger { get; }
-        //private ReportPrinter Reporter { get; }
-
-        //public void Dispose()
-        //{
-        //    ActiveDomain.AssemblyLoad -= OnAssemblyLoad;
-        //}
+            new HashSet<string>(StringComparer.InvariantCultureIgnoreCase)
+                {"mscorlib", "System.Core", "System", "System.Xml"};
 
         // Mimicked from https://github.com/kkdevs/Patchwork/blob/master/Patchwork/MonoScript.cs#L124
-        public static Assembly Compile<T>(IList<T> sources, IEnumerable<Assembly> imports = null, TextWriter logger = null) where T : ICSharpSource
+        public static Assembly Compile<T>(IList<T> sources, IEnumerable<Assembly> imports = null,
+            TextWriter logger = null) where T : ICSharpSource
         {
             ReportPrinter reporter = logger == null ? new ConsoleReportPrinter() : new StreamReportPrinter(logger);
             Location.Reset();
 
-            string dllName = $"compiled_{DateTime.Now.Ticks}";
+            var dllName = $"compiled_{DateTime.Now.Ticks}";
 
-            CompilerContext ctx = CreateContext(reporter);
+            var ctx = CreateContext(reporter);
             ctx.Settings.SourceFiles.Clear();
 
-            int i = 0;
+            var i = 0;
 
             SeekableStreamReader GetFile(SourceFile file)
             {
                 return new SeekableStreamReader(new MemoryStream(sources[file.Index].Bytes), Encoding.UTF8);
             }
 
-            foreach (ICSharpSource source in sources)
+            foreach (var source in sources)
             {
                 ctx.Settings.SourceFiles.Add(new SourceFile(source.Name, source.Location, i, GetFile));
                 i++;
@@ -103,9 +85,9 @@ namespace ScriptLoader
             var session = new ParserSession {UseJayGlobalArrays = true, LocatedTokens = new LocatedToken[15000]};
             container.EnableRedefinition();
 
-            foreach (SourceFile sourceFile in ctx.Settings.SourceFiles)
+            foreach (var sourceFile in ctx.Settings.SourceFiles)
             {
-                SeekableStreamReader stream = sourceFile.GetInputStream(sourceFile);
+                var stream = sourceFile.GetInputStream(sourceFile);
                 var source = new CompilationSourceFile(container, sourceFile);
                 source.EnableRedefinition();
                 container.AddTypeContainer(source);
@@ -123,7 +105,7 @@ namespace ScriptLoader
             ImportAppdomainAssemblies(a => importer.ImportAssembly(a, container.GlobalRootNamespace));
 
             if (imports != null)
-                foreach (Assembly assembly in imports)
+                foreach (var assembly in imports)
                     importer.ImportAssembly(assembly, container.GlobalRootNamespace);
 
             loader.LoadReferences(container);
@@ -155,16 +137,11 @@ namespace ScriptLoader
             return ass.Builder;
         }
 
-        //private void OnAssemblyLoad(object sender, AssemblyLoadEventArgs args)
-        //{
-        //    ReferenceAssembly(args.LoadedAssembly);
-        //}
-
         private static void ImportAppdomainAssemblies(Action<Assembly> import)
         {
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                string name = assembly.GetName().Name;
+                var name = assembly.GetName().Name;
                 if (StdLib.Contains(name))
                     continue;
                 import(assembly);
@@ -175,18 +152,13 @@ namespace ScriptLoader
         {
             var settings = new CompilerSettings
             {
-                    Version = LanguageVersion.Experimental,
-                    GenerateDebugInfo = false,
-                    StdLib = true,
-                    Target = Target.Library
+                Version = LanguageVersion.Experimental,
+                GenerateDebugInfo = false,
+                StdLib = true,
+                Target = Target.Library
             };
 
             return new CompilerContext(settings, reportPrinter);
         }
-
-        //private static ReportPrinter CreatePrinter(TextWriter tw)
-        //{
-        //    return new StreamReportPrinter(tw);
-        //}
     }
 }
