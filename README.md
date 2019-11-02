@@ -31,8 +31,46 @@ public static class MyScript {
     public static void Main() {
         Debug.Log("Hello, world!");
     }
+
+    public static void Unload() {
+        // Unload and unpatch everything before reloading the script
+    }
 }
 ```
+
+### Reloading scripts
+
+ScriptLoader automatically detects changes in the scripts and reloads them.  
+
+In order to make your script reloadable, **you must implement `static void Unload()`** method that cleans up any used resources.  
+This is done because of Mono's limitation: you cannot actually unload any already loaded assemblies in Mono. Because of that, you should 
+clean up your script so that the newly compiled script will not interfere with your game!
+
+### Specifying metadata
+
+You can specify metadata *at the very start of your script* by using the following format:
+
+```csharp
+// #name Short name of the script
+// #author ghorsington
+// #desc A longer description of the script. This still should be a one-liner.
+// #ref ${Managed}/UnityEngine.UI.dll
+// #ref ${BepInExRoot}/core/MyDependency.dll
+
+using UnityEngine;
+...
+```
+
+The `ref` tag is special: ScriptLoader will automatically load any assemblies specified with the tag.  
+The path is relative to the `scripts` folder, but you can use `${Folder}` to reference some special folders.
+
+Currently the following special folders are available:
+
+* `Managed` -- path to the game's Managed folder with all the main DLLs
+* `Scripts` -- path to the `scripts` folder
+* `BepInExRoot` -- path to the `BepInEx` folder
+
+**WIP**: At the moment, all tags but `ref` have no effect. A GUI is planned to allow to disable any scripts.
 
 ### Compilation errors
 
@@ -40,7 +78,7 @@ At this moment the compilation errors are simply written to the BepInEx console.
 
 ## TODO
 
-* [ ] Script reloading
-* [ ] Specifying script metadata (name, description, DLL dependencies)
+* [x] Script reloading
+* [x] Specifying script metadata (name, description, DLL dependencies)
 * [ ] Maybe a UI?
 * [ ] Optionally an ability to locate and use `csc` to compile scripts when mcs cannot be used
