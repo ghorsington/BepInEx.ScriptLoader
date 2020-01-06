@@ -6,6 +6,8 @@ This plugin uses a modified version of the Mono Compiler Service (mcs) that allo
 The compiler relies on `System.Reflection.Emit` being present! As such, Unity games using .NET Standard API (i.e. has `netstandard.dll` in the `Managed` folder) 
 will not be able to run this plugin!
 
+**Now scripts ignore visibility checks!** Thanks to [custom MCS](https://github.com/denikson/mcs-unity), you can now access private members (methods, fields) via scripts!
+
 ## Why
 
 Because sometimes I'm lazy to open Visual Studio and write proper plugins.
