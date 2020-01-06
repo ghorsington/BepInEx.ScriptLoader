@@ -62,7 +62,11 @@ namespace ScriptLoader
             var ass = new AssemblyDefinitionDynamic(container, dllName, $"{dllName}.dll");
             container.SetDeclaringAssembly(ass);
 
-            var importer = new ReflectionImporter(container, ctx.BuiltinTypes);
+            var importer = new ReflectionImporter(container, ctx.BuiltinTypes) 
+            {
+                IgnoreCompilerGeneratedField = false,
+                IgnorePrivateMembers = false
+            };
             ass.Importer = importer;
 
             var loader = new DynamicLoader(importer, ctx);
