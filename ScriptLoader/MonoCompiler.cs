@@ -64,7 +64,7 @@ namespace ScriptLoader
 
             var importer = new ReflectionImporter(container, ctx.BuiltinTypes) 
             {
-                IgnoreCompilerGeneratedField = false,
+                IgnoreCompilerGeneratedField = true,
                 IgnorePrivateMembers = false
             };
             ass.Importer = importer;
