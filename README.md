@@ -58,10 +58,13 @@ You can specify metadata *at the very start of your script* by using the followi
 // #desc A longer description of the script. This still should be a one-liner.
 // #ref ${Managed}/UnityEngine.UI.dll
 // #ref ${BepInExRoot}/core/MyDependency.dll
+// #proc_filter Game.exe
 
 using UnityEngine;
 ...
 ```
+
+The `proc_filter` tag acts like BepinProcess attribute in BepInEx: it allows you to specify which processes to run the script on.
 
 The `ref` tag is special: ScriptLoader will automatically load any assemblies specified with the tag.  
 The path is relative to the `scripts` folder, but you can use `${Folder}` to reference some special folders.
