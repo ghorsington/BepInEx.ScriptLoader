@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using UnityEngine;
 
 namespace ScriptLoader
 {
@@ -12,20 +13,22 @@ namespace ScriptLoader
                 ["name"] = (si, c) => si.Name = c,
                 ["author"] = (si, c) => si.Author = c,
                 ["desc"] = (si, c) => si.Description = c,
-                ["ref"] = (si, c) => si.References.Add(c.Template(Utilities.KnownPaths))
+                ["ref"] = (si, c) => si.References.Add(c.Template(Utilities.KnownPaths)),
+                ["proc_filter"] = (si, c) => si.ProcessFilters.Add(c)
             };
 
         public string Author { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
         public List<string> References { get; set; } = new List<string>();
+        public List<string> ProcessFilters { get; set; } = new List<string>();
 
         public static ScriptInfo FromTextFile(string path)
         {
             using (var tw = File.OpenText(path))
             {
                 string line;
-                ScriptInfo si = null;
+                var si = new ScriptInfo();
                 while ((line = tw.ReadLine()) != null)
                 {
                     line = line.Trim();
@@ -41,11 +44,9 @@ namespace ScriptLoader
                     if (nextSpace < 0)
                         continue;
 
-                    var command = line.Substring(1, nextSpace);
+                    var command = line.Substring(1, nextSpace - 1);
                     var value = line.Substring(nextSpace).Trim();
 
-                    if (si == null)
-                        si = new ScriptInfo();
                     if (CommandParsers.TryGetValue(command, out var parser))
                         parser(si, value);
                 }

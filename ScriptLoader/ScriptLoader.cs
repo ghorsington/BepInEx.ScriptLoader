@@ -10,7 +10,7 @@ using BepInEx.Logging;
 
 namespace ScriptLoader
 {
-    [BepInPlugin("horse.coder.tools.scriptloader", "C# Script Loader", "1.2")]
+    [BepInPlugin("horse.coder.tools.scriptloader", "C# Script Loader", "1.2.1")]
     public class ScriptLoader : BaseUnityPlugin
     {
         private readonly string scriptsPath = Path.Combine(Paths.GameRootPath, "scripts");
@@ -82,11 +82,21 @@ namespace ScriptLoader
             if (!File.Exists(ignoresPath))
                 File.WriteAllText(ignoresPath, "");
 
+            bool IsValidProcess(string scriptFile)
+            {
+                var si = availableScripts[scriptFile];
+
+                if (si.ProcessFilters.Count == 0)
+                    return true;
+                return si.ProcessFilters.Any(p => string.Equals(p.ToLowerInvariant().Replace(".exe", ""), Paths.ProcessName,
+                                                                StringComparison.InvariantCultureIgnoreCase));
+            }
+
             var ignores = new HashSet<string>(File.ReadAllLines(ignoresPath).Select(s => s.Trim()));
-            var scriptsToCompile = files.Where(f => !ignores.Contains(Path.GetFileName(f))).ToList();
+            var scriptsToCompile = files.Where(f => IsValidProcess(f) && !ignores.Contains(Path.GetFileName(f))).ToList();
 
             Logger.LogInfo(
-                $"Found {files.Length} scripts to compile, skipping {files.Length - scriptsToCompile.Count} scripts because of `scriptignores`");
+                $"Found {files.Length} scripts to compile, skipping {files.Length - scriptsToCompile.Count} scripts because of `scriptignores` or process filters");
 
             var md5 = MD5.Create();
             var scriptDict = new Dictionary<string, byte[]>();
@@ -108,7 +118,7 @@ namespace ScriptLoader
 
             foreach (var scriptFile in scriptsToCompile)
             {
-                if (!availableScripts.TryGetValue(scriptFile, out var info) || info == null) continue;
+                if (!availableScripts.TryGetValue(scriptFile, out var info)) continue;
                 foreach (var infoReference in info.References)
                     Assembly.LoadFile(infoReference);
             }
