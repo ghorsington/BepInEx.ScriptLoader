@@ -92,8 +92,19 @@ namespace ScriptLoader
                                                                 StringComparison.InvariantCultureIgnoreCase));
             }
 
+            bool UsesHarmonyWrapper(string scriptFile)
+            {
+                var text = File.ReadAllText(scriptFile);
+                if (text.Contains("HarmonyWrapper") || text.Contains("BepInEx.Harmony"))
+                {
+                    Logger.LogError($"Skipping loading `{scriptFile}` because it references outdated HarmonyWrapper and BepInEx.Harmony. To fix this, refer to github.com/denikson/BepInEx.ScriptLoader#upgrading-to-1240");
+                    return true;
+                }
+                return false;
+            }
+
             var ignores = new HashSet<string>(File.ReadAllLines(ignoresPath).Select(s => s.Trim()));
-            var scriptsToCompile = files.Where(f => IsValidProcess(f) && !ignores.Contains(Path.GetFileName(f))).ToList();
+            var scriptsToCompile = files.Where(f => !UsesHarmonyWrapper(f) && IsValidProcess(f) && !ignores.Contains(Path.GetFileName(f))).ToList();
 
             Logger.LogInfo(
                 $"Found {files.Length} scripts to compile, skipping {files.Length - scriptsToCompile.Count} scripts because of `scriptignores` or process filters");

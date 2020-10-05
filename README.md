@@ -81,9 +81,19 @@ Currently the following special folders are available:
 
 At this moment the compilation errors are simply written to the BepInEx console.
 
-## TODO
+### Upgrading to 1.2.4.0
 
-* [x] Script reloading
-* [x] Specifying script metadata (name, description, DLL dependencies)
-* [ ] Maybe a UI?
-* [ ] Optionally an ability to locate and use `csc` to compile scripts when mcs cannot be used
+Starting 1.2.4.0, you might see the following error when loading a script:
+
+```
+Skipping loading `...` because it references outdated HarmonyWrapper and BepInEx.Harmony. To fix this, refer to github.com/denikson/BepInEx.ScriptLoader#upgrading-to-1240.
+```
+
+This error happens when using older ScriptLoader scripts with ScriptLoader 1.2.4.0 or newer.
+
+In most cases, you can fix the script yourself. Open the script specified in the error into Notepad or some other text editor and do the following changes:
+
+* Remove `using BepInEx.Harmony;` line
+* Replace `HarmonyWrapper.PatchAll` with `Harmony.CreateAndPatchAll`
+
+Then try to run the game again. If the error persists or you get some other error, the script is too complex to fix by this guide. In that case please conact the developer of the script and ask them to fix it.
