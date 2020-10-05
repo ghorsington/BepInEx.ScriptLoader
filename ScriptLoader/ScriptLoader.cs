@@ -10,7 +10,7 @@ using BepInEx.Logging;
 
 namespace ScriptLoader
 {
-    [BepInPlugin("horse.coder.tools.scriptloader", "C# Script Loader", "1.2.3")]
+    [BepInPlugin("horse.coder.tools.scriptloader", "C# Script Loader", "1.2.4")]
     public class ScriptLoader : BaseUnityPlugin
     {
         private readonly string scriptsPath = Path.Combine(Paths.GameRootPath, "scripts");
