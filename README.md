@@ -1,4 +1,4 @@
-# ScriptLoader for BepInEx 5
+# ScriptLoader for BepInEx 5.4
 
 This is a BepInEx 5 plugin that allows you to run C# script files without compiling them to a DLL.
 
