@@ -120,11 +120,10 @@ namespace ScriptLoader
             // In some cases there could be multiple versions of the same assembly loaded
             // In that case we decide to simply load only the latest one as it's easiest to handle
             var dedupedAssemblies = AppDomain.CurrentDomain.GetAssemblies()
-                .Select(a => new { ass = a, name = ParseName(a.FullName) })
+                .Select(a => new {ass = a, name = ParseName(a.FullName)})
                 .Where(a => a.name != null)
                 .GroupBy(a => a.name.Name)
-                .Select(g => g.OrderByDescending(a => a.name.Version))
-                .First();
+                .Select(g => g.OrderByDescending(a => a.name.Version).First());
             foreach (var ass in dedupedAssemblies)
             {
                 if (StdLib.Contains(ass.name.Name) || compiledAssemblies.Contains(ass.name.Name))
