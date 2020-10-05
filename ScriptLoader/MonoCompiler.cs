@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
+using BepInEx;
 using Mono.CSharp;
 
 namespace ScriptLoader
@@ -101,14 +103,33 @@ namespace ScriptLoader
             return ass.Builder;
         }
 
+        private static AssemblyName ParseName(string fullName)
+        {
+            try
+            {
+                return new AssemblyName(fullName);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         private static void ImportAppdomainAssemblies(Action<Assembly> import)
         {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            // In some cases there could be multiple versions of the same assembly loaded
+            // In that case we decide to simply load only the latest one as it's easiest to handle
+            var dedupedAssemblies = AppDomain.CurrentDomain.GetAssemblies()
+                .Select(a => new { ass = a, name = ParseName(a.FullName) })
+                .Where(a => a.name != null)
+                .GroupBy(a => a.name.Name)
+                .Select(g => g.OrderByDescending(a => a.name.Version))
+                .First();
+            foreach (var ass in dedupedAssemblies)
             {
-                var name = assembly.GetName().Name;
-                if (StdLib.Contains(name) || compiledAssemblies.Contains(name))
+                if (StdLib.Contains(ass.name.Name) || compiledAssemblies.Contains(ass.name.Name))
                     continue;
-                import(assembly);
+                import(ass.ass);
             }
         }
 
