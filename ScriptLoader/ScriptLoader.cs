@@ -6,25 +6,29 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using BepInEx;
+using BepInEx.IL2CPP;
 using BepInEx.Logging;
 
 namespace ScriptLoader
 {
     [BepInPlugin("horse.coder.tools.scriptloader", "C# Script Loader", "1.2.4")]
-    public class ScriptLoader : BaseUnityPlugin
+    public class ScriptLoader : BasePlugin
     {
         private readonly string scriptsPath = Path.Combine(Paths.GameRootPath, "scripts");
         private Dictionary<string, ScriptInfo> availableScripts = new Dictionary<string, ScriptInfo>();
         private FileSystemWatcher fileSystemWatcher;
         private Assembly lastCompilationAssembly;
         private string lastCompilationHash;
-        private LoggerTextWriter loggerTextWriter;
-        private bool shouldRecompile;
-
-        private void Awake()
+        private LogTextWriter LogTextWriter;
+        public override bool Unload()
         {
-            DontDestroyOnLoad(this);
-            loggerTextWriter = new LoggerTextWriter(Logger);
+            fileSystemWatcher.EnableRaisingEvents = false;
+            fileSystemWatcher.Dispose();
+            return base.Unload();
+        }
+        public override void Load()
+        {
+            LogTextWriter = new LogTextWriter(Log);
             CompileScripts();
 
             fileSystemWatcher = new FileSystemWatcher(scriptsPath);
@@ -32,39 +36,25 @@ namespace ScriptLoader
             fileSystemWatcher.Filter = "*.cs";
             fileSystemWatcher.Changed += (sender, args) =>
             {
-                Logger.LogInfo($"File {Path.GetFileName(args.Name)} changed. Recompiling...");
-                shouldRecompile = true;
+                Log.LogInfo("File " + Path.GetFileName(args.Name) + " changed. Recompiling...");
+                CompileScripts();
             };
             fileSystemWatcher.Deleted += (sender, args) =>
             {
-                Logger.LogInfo($"File {Path.GetFileName(args.Name)} removed. Recompiling...");
-                shouldRecompile = true;
+                Log.LogInfo("File " + Path.GetFileName(args.Name) + " removed. Recompiling...");
+                CompileScripts();
             };
             fileSystemWatcher.Created += (sender, args) =>
             {
-                Logger.LogInfo($"File {Path.GetFileName(args.Name)} created. Recompiling...");
-                shouldRecompile = true;
+                Log.LogInfo("File " + Path.GetFileName(args.Name) + " created. Recompiling...");
+                CompileScripts();
             };
             fileSystemWatcher.Renamed += (sender, args) =>
             {
-                Logger.LogInfo($"File {Path.GetFileName(args.Name)} renamed. Recompiling...");
-                shouldRecompile = true;
+                Log.LogInfo("File " + Path.GetFileName(args.Name) + " renamed. Recompiling...");
+                CompileScripts();
             };
             fileSystemWatcher.EnableRaisingEvents = true;
-        }
-
-        private void OnDestroy()
-        {
-            fileSystemWatcher.EnableRaisingEvents = false;
-            fileSystemWatcher.Dispose();
-        }
-
-        private void Update()
-        {
-            if (!shouldRecompile)
-                return;
-            CompileScripts();
-            shouldRecompile = false;
         }
 
         private void CompileScripts()
@@ -97,7 +87,7 @@ namespace ScriptLoader
                 var text = File.ReadAllText(scriptFile);
                 if (text.Contains("HarmonyWrapper") || text.Contains("BepInEx.Harmony"))
                 {
-                    Logger.LogError($"Skipping loading `{scriptFile}` because it references outdated HarmonyWrapper and BepInEx.Harmony. To fix this, refer to github.com/denikson/BepInEx.ScriptLoader#upgrading-to-1240");
+                    Log.LogError("Skipping loading `" + scriptFile + "` because it references outdated HarmonyWrapper and BepInEx.Harmony. To fix this, refer to github.com/denikson/BepInEx.ScriptLoader#upgrading-to-1240");
                     return true;
                 }
                 return false;
@@ -106,8 +96,8 @@ namespace ScriptLoader
             var ignores = new HashSet<string>(File.ReadAllLines(ignoresPath).Select(s => s.Trim()));
             var scriptsToCompile = files.Where(f => !UsesHarmonyWrapper(f) && IsValidProcess(f) && !ignores.Contains(Path.GetFileName(f))).ToList();
 
-            Logger.LogInfo(
-                $"Found {files.Length} scripts to compile, skipping {files.Length - scriptsToCompile.Count} scripts because of `scriptignores` or process filters");
+            Log.LogInfo(
+                "Found " + files.Length + " scripts to compile, skipping " + (files.Length - scriptsToCompile.Count) + " scripts because of `scriptignores` or process filters");
 
             var md5 = MD5.Create();
             var scriptDict = new Dictionary<string, byte[]>();
@@ -123,7 +113,7 @@ namespace ScriptLoader
             
             if (hash == lastCompilationHash)
             {
-                Logger.LogInfo("No changes detected! Skipping compilation!");
+                Log.LogInfo("No changes detected! Skipping compilation!");
                 return;
             }
 
@@ -134,11 +124,11 @@ namespace ScriptLoader
                     Assembly.LoadFile(infoReference);
             }
 
-            var ass = MonoCompiler.Compile(scriptDict, loggerTextWriter);
+            var ass = MonoCompiler.Compile(scriptDict, LogTextWriter);
 
             if (ass == null)
             {
-                Logger.LogError("Skipping loading scripts because of errors above.");
+                Log.LogError("Skipping loading scripts because of errors above.");
                 return;
             }
 
@@ -151,7 +141,7 @@ namespace ScriptLoader
                     if (method == null)
                         continue;
 
-                    Logger.Log(LogLevel.Info, $"Unloading {type.Name}");
+                    Log.Log(LogLevel.Info, "Unloading " + type.Name);
                     method.Invoke(null, new object[0]);
                 }
 
@@ -166,20 +156,20 @@ namespace ScriptLoader
                 if (method == null)
                     continue;
 
-                Logger.Log(LogLevel.Info, $"Running {type.Name}");
+                Log.Log(LogLevel.Info, "Running " + type.Name);
                 method.Invoke(null, new object[0]);
             }
         }
     }
 
-    internal class LoggerTextWriter : TextWriter
+    internal class LogTextWriter : TextWriter
     {
-        private readonly ManualLogSource logger;
+        private readonly ManualLogSource Log;
         private readonly StringBuilder sb = new StringBuilder();
 
-        public LoggerTextWriter(ManualLogSource logger)
+        public LogTextWriter(ManualLogSource Log)
         {
-            this.logger = logger;
+            this.Log = Log;
         }
 
         public override Encoding Encoding { get; } = Encoding.UTF8;
@@ -188,7 +178,7 @@ namespace ScriptLoader
         {
             if (value == '\n')
             {
-                logger.Log(LogLevel.Info, sb.ToString());
+                Log.Log(LogLevel.Info, sb.ToString());
                 sb.Length = 0;
                 return;
             }
