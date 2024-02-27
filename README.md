@@ -1,5 +1,5 @@
 # Why the fork?
-[ScriptLoader has a minor bug that would...](https://github.com/ghorsington/BepInEx.ScriptLoader/issues/4) fixed in this fork.
+[ScriptLoader has a minor bug that would ](https://github.com/ghorsington/BepInEx.ScriptLoader/issues/4) fixed in this fork.
 
 # ScriptLoader for BepInEx 5.4
 
