@@ -1,6 +1,3 @@
-# Why the fork?
-[ScriptLoader has a minor bug that would ](https://github.com/ghorsington/BepInEx.ScriptLoader/issues/4) fixed in this fork.
-
 # ScriptLoader for BepInEx 5.4
 
 This is a BepInEx 5 plugin that allows you to run C# script files without compiling them to a DLL.
